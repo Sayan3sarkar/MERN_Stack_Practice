@@ -21,6 +21,8 @@ exports.getPosts = (req, res, next) => {
         .then(count => {
             totalItems = count;
             return Post.find()
+                .populate('creator')
+                .sort({ createdAt: -1 })
                 .skip((currentPage - 1) * itemsPerPage)
                 .limit(itemsPerPage);
         })
@@ -79,7 +81,13 @@ exports.createPost = (req, res, next) => {
         .then(result => {
             io.getIO().emit('posts', {
                 action: 'create',
-                post: post
+                post: {
+                    ...post._doc,
+                    creator: {
+                        _id: creator._id,
+                        name: creator.name
+                    }
+                }
             });
             res.status(201).json({
                 message: "Post Created successfully",
@@ -152,13 +160,14 @@ exports.updatePostById = (req, res, next) => {
         throw error;
     }
     Post.findById(postId)
+        .populate('creator')
         .then(post => {
             if (!post) {
                 const error = new Error("Couldn't find post with the given ID");
                 error.statusCode = 404;
                 throw error;
             }
-            if (post.creator.toString() !== req.userId) {
+            if (post.creator._id.toString() !== req.userId) {
                 const error = new Error('Not Authorized');
                 error.status = 403;
                 throw error;
@@ -172,6 +181,10 @@ exports.updatePostById = (req, res, next) => {
             return post.save();
         })
         .then(result => {
+            io.getIO().emit('posts', {
+                action: 'update',
+                post: result
+            });
             res.status(200).json({
                 message: 'Post Updated',
                 post: result
@@ -216,6 +229,10 @@ exports.deletePostById = (req, res, next) => {
             return user.save();
         })
         .then(result => {
+            io.getIO().emit('posts', {
+                action: 'delete',
+                post: postId
+            })
             res.status(200).json({
                 message: 'Post Deleted'
             });

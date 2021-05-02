@@ -71,9 +71,8 @@ mongoose.connect('mongodb+srv://Sayan3sarkar:Sayan1234@cluster0.qv4tn.mongodb.ne
         console.log('Connected to Database');
         const server = app.listen(8080);
         const io = require('./shared/socket').init(server);
-        io.on('connection', socket => {
+        io.on('connection', () => {
             console.log('Client Connected');
-            console.log(socket);
-        });
+        })
     })
     .catch(err => console.log(err))
