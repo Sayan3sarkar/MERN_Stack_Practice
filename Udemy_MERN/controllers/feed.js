@@ -5,6 +5,8 @@ const path = require('path');
 const Post = require("../models/post");
 const User = require('../models/user');
 
+const io = require('../shared/socket');
+
 /**
  * Controller to view all posts
  * @param {*} req
@@ -75,6 +77,10 @@ exports.createPost = (req, res, next) => {
             return user.save();
         })
         .then(result => {
+            io.getIO().emit('posts', {
+                action: 'create',
+                post: post
+            });
             res.status(201).json({
                 message: "Post Created successfully",
                 post: post,
